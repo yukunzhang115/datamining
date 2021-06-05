@@ -2,9 +2,9 @@ import java.io.*;
 import java.util.*;
 import java.math.*;
 
-import jdk.javadoc.internal.doclets.formats.html.resources.standard;
+// import jdk.javadoc.internal.doclets.formats.html.resources.standard;
 
-class HelloWorld {
+class Pagerank {
 
     static final double converge = 0.000000000001;
 
@@ -169,8 +169,6 @@ class HelloWorld {
         
         return newString;
     }
-
-
 
     public static void iteration(List<List<String>> rows) {
         if(rows.size() == 1) {
@@ -370,17 +368,91 @@ class HelloWorld {
         }
     }
 
-    public static void main(String args[]) {
-        try {
-                BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-                String line = in.readLine( );
-                System.out.println(line);
-        } catch ( IOException e) {
-                System.out.println(e.getMessage( ));
-                System.exit(1);
-        }
-        System.exit(0);
+    public static void readText(Set<String>titleSet, List<String> title, List<List<Double>> columns) {
+        BufferedReader reader;
+		try {
+			reader = new BufferedReader(new FileReader("routes.txt"));
+			String line = reader.readLine();
+            int count = 0;
+			while (line != null) {
+                count++;
+				// System.out.println(count + "-" + line);
+                
 
+                String[] strArray = line.split(",");
+                String departure = strArray[2];
+                String destination = strArray[4];
+                System.out.println(count + "-" + departure + "-" + destination);
+
+                if(!titleSet.contains(departure)){
+                    List<Double> newColumn = new LinkedList<>();
+                    columns.add(newColumn);
+
+                    for(int i = 0; i < titleSet.size(); i++) {
+                        newColumn.add(0.0);
+                    }
+
+                    for(int i = 0; i < columns.size(); i++) {
+                        columns.get(i).add(0.0);
+                    }
+
+                    title.add(departure);
+                    titleSet.add(departure);
+                }
+
+                if(!titleSet.contains(destination)){
+                    List<Double> newColumn = new LinkedList<>();
+                    columns.add(newColumn);
+
+                    for(int i = 0; i < titleSet.size(); i++) {
+                        newColumn.add(0.0);
+                    }
+
+                    for(int i = 0; i < columns.size(); i++) {
+                        columns.get(i).add(0.0);
+                    }
+
+                    title.add(destination);
+                    titleSet.add(destination);
+                }
+
+                int indexOfDeparture = 0;
+                int indexOfDestination = 0;
+                int stop = 0;
+                for(int i = 0; i < title.size(); i++) {
+                    if(title.get(i).equals(departure)) {
+                        indexOfDeparture = i;
+                        stop++;
+                    }else if(title.get(i).equals(destination)) {
+                        indexOfDestination = i;
+                        stop++;
+                    }
+
+                    if(stop >= 2) break;
+                }
+
+                columns.get(indexOfDeparture).set(indexOfDestination, 1.0);
+
+				// read next line
+				line = reader.readLine();
+			}
+			reader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    }
+
+    public static void main(String args[]) {
+        Set<String> titleSet = new HashSet<>();
+        List<String> title = new LinkedList<>();
+        List<List<Double>> columns = new LinkedList<>();
+        readText(titleSet, title, columns);
+
+        for(int i = 0; i < columns.size(); i++) {
+            for(int j = 0; j < columns.size(); i++) {
+                System.out.print(columns.get(j).get(i));
+            }
+        }
 
         // Scanner scanner = new Scanner(System.in);
 
