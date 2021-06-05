@@ -8,58 +8,27 @@ class Pagerank {
 
     static final double converge = 0.000000000001;
 
-    public static void removeNode(List<List<String>> rows, boolean isRational) {
-        int rowsNumber = rows.size();
-        int colsNumber = rows.size();
-        // int iterationTime = 0;
-
+    public static void removeNode(List<List<Double>> columns, List<Integer> countColumns) {
         while (true) {
-            // iterationTime++;
-
-            //after 5 iterations, we change all the data with "/" from rational to real number
-            // if(isRational && iterationTime == 6) {
-            //     for(int i = 0; i < rowsNumber; i++) {
-            //         for(int j = 0; j < colsNumber; j++) {
-            //             if(rows.get(i).get(j).contains("/")) {
-            //                 String[] numbers = rows.get(i).get(j).split("/");
-            //                 double num1 = Double.parseDouble(numbers[0]);
-            //                 double num2 = Double.parseDouble(numbers[1]);
-            //                 double num = num1 / num2;
-            //                 String finalStr = String.valueOf(num);
-            //                 rows.get(i).set(j, finalStr);
-            //             }
-            //         }
-            //     }
-            // }
-
-            int node = -1;
-            List<Integer> rowNumberList = new ArrayList<>();
             boolean isEnd = false;
 
-            // find a node with zero or one non-zero number
-            for (int j = 0; j < colsNumber; j++) {
-                rowNumberList.clear();
-                for (int i = 0; i < rowsNumber; i++) {
-                    if (!rows.get(i).get(j).equals("0"))
-                        rowNumberList.add(i);
-                }
-                if (rowNumberList.size() <= 1) {
-                    node = j;
+            // find a column with count of 1 or 0
+            int columnNumber = -1;
+            for(int i = 0; i < countColumns.size(); i++) {
+                if(countColumns.get(i) <= 1) {
+                    columnNumber = i;
                     break;
                 }
-                if (j == colsNumber - 1)
-                    isEnd = true;
+                
+                if(i == countColumns.size() - 1) isEnd = true;
             }
+            if(isEnd) break;
 
-            // if there is no wrong node, then end while
-            if (isEnd)
-                break;
+            // delete that column
+            columns.remove(columnNumber);
+            countColumns.remove(columnNumber);
 
-            // delete the wrong column
-            for (int i = 0; i < rowsNumber; i++) {
-                rows.get(i).remove(node);
-            }
-            colsNumber--;
+            // colsNumber--;
 
             // System.out.println("---matrix after deleting wrong column---");
             // for (int i = 0; i < rowsNumber; i++) {
@@ -70,52 +39,12 @@ class Pagerank {
             //     System.out.println();
             // }
 
-            // change the data from this wrong row to other rows
-            for (int j = 0; j < colsNumber; j++) {
+            // modify count of other columns AND delete that row
+            for(int i = 0; i < columns.size(); i++) {
+                if(columns.get(i).get(columnNumber) == 1.0) countColumns.set(i, countColumns.get(i) - 1);
 
-                // detect one non-zero data in this row we need to change
-                if (!rows.get(node).get(j).equals("0")) {
-
-                    // System.out.println("j: " + j);
-
-                    // calculate sum of column's non-zero number except the row we detect
-                    double sum = 0;
-                    for (int i = 0; i < rowsNumber; i++) {
-                        if (i == node) {
-                            rows.get(i).set(j, "0");
-                            continue;
-                        }
-                        if (!rows.get(i).get(j).equals("0"))
-                            sum++;
-                    }
-
-                    // System.out.println("sum: " + sum);
-
-                    //if the data is real number, the new data should be real number
-                    if(!isRational) {
-                        double num = 1 / sum;
-                        String newStr = String.valueOf(num);
-                        for (int i = 0; i < rowsNumber; i++) {
-                            if (!rows.get(i).get(j).equals("0"))
-                                rows.get(i).set(j, newStr);
-                        }
-
-                        continue;
-                    }
-
-                    String str = sum == 1.0 ? "1" : "1/" + String.valueOf((int)sum);
-
-                    // set new data to this column
-                    for (int i = 0; i < rowsNumber; i++) {
-                        if (!rows.get(i).get(j).equals("0"))
-                            rows.get(i).set(j, str);
-                    }
-                }
+                columns.get(i).remove(columnNumber);
             }
-
-            // delete the wrong row
-            rows.remove(node);
-            rowsNumber--;
 
             //show new matrix
             // System.out.println("---new matrix---");
@@ -126,16 +55,10 @@ class Pagerank {
             //     }
             //     System.out.println();
             // }
+
+
         }
     }
-
-    // public static void rational() {
-    // int sum = 2;
-    // double a = 1 / sum;
-    // double b = 1.0 / sum;
-    // if(a % 1.0 == 0.0) System.out.println("zheng shu");
-    // else System.out.println("xiao shu");
-    // }
 
     public static String doubleToRationalString(double num1) {
         double num2 = 1;
@@ -368,12 +291,18 @@ class Pagerank {
         }
     }
 
-    public static void readText(Set<String>titleSet, List<String> title, List<List<Double>> columns) {
+    public static void readText(List<List<Double>> columns, List<Integer> countColumns, Map<String, Integer> nameMap) {
         BufferedReader reader;
+
+        // List<Integer> countColumn = new LinkedList<>();
+
 		try {
 			reader = new BufferedReader(new FileReader("routes.txt"));
 			String line = reader.readLine();
+
             int count = 0;
+            
+
 			while (line != null) {
                 count++;
 				// System.out.println(count + "-" + line);
@@ -382,56 +311,57 @@ class Pagerank {
                 String[] strArray = line.split(",");
                 String departure = strArray[2];
                 String destination = strArray[4];
+
                 System.out.println(count + "-" + departure + "-" + destination);
 
-                if(!titleSet.contains(departure)){
+                if(!nameMap.containsKey(departure)){
                     List<Double> newColumn = new LinkedList<>();
-                    columns.add(newColumn);
 
-                    for(int i = 0; i < titleSet.size(); i++) {
+                    int i = 0;
+
+                    for(; i < columns.size(); i++) {
                         newColumn.add(0.0);
-                    }
-
-                    for(int i = 0; i < columns.size(); i++) {
                         columns.get(i).add(0.0);
                     }
 
-                    title.add(departure);
-                    titleSet.add(departure);
-                }
-
-                if(!titleSet.contains(destination)){
-                    List<Double> newColumn = new LinkedList<>();
+                    newColumn.add(0.0);
                     columns.add(newColumn);
 
-                    for(int i = 0; i < titleSet.size(); i++) {
-                        newColumn.add(0.0);
-                    }
+                    nameMap.put(departure, i);
 
-                    for(int i = 0; i < columns.size(); i++) {
+                    countColumns.add(0);
+                }
+
+                if(!nameMap.containsKey(destination)){
+                    List<Double> newColumn = new LinkedList<>();
+
+                    int i = 0;
+
+                    for(; i < columns.size(); i++) {
+                        newColumn.add(0.0);
                         columns.get(i).add(0.0);
                     }
 
-                    title.add(destination);
-                    titleSet.add(destination);
+                    newColumn.add(0.0);
+                    columns.add(newColumn);
+
+                    nameMap.put(destination, i);
+
+                    countColumns.add(0);
                 }
 
-                int indexOfDeparture = 0;
-                int indexOfDestination = 0;
-                int stop = 0;
-                for(int i = 0; i < title.size(); i++) {
-                    if(title.get(i).equals(departure)) {
-                        indexOfDeparture = i;
-                        stop++;
-                    }else if(title.get(i).equals(destination)) {
-                        indexOfDestination = i;
-                        stop++;
-                    }
-
-                    if(stop >= 2) break;
-                }
-
+                int indexOfDeparture = nameMap.get(departure);
+                int indexOfDestination = nameMap.get(destination);
                 columns.get(indexOfDeparture).set(indexOfDestination, 1.0);
+                countColumns.set(indexOfDeparture, countColumns.get(indexOfDeparture) + 1);
+
+                // for(int i = 0; i < columns.size(); i++) {
+                //     for(int j = 0; j < columns.size(); j++) {
+                //         System.out.print(columns.get(j).get(i) + " ");
+                //     }
+                //     System.out.println(countColumn);
+                //     System.out.println();
+                // }
 
 				// read next line
 				line = reader.readLine();
@@ -440,83 +370,36 @@ class Pagerank {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+
+        // for(int i = 0; i < columns.size(); i++) {
+        //     System.out.println(i);
+        //     double num = 1.0 / countColumns.get(i);
+        //     for(int j = 0; j < columns.size(); j++) {
+        //         if(columns.get(i).get(j) == 1.0) columns.get(i).set(j, num);
+        //     }
+        // }
+
     }
 
     public static void main(String args[]) {
-        Set<String> titleSet = new HashSet<>();
-        List<String> title = new LinkedList<>();
         List<List<Double>> columns = new LinkedList<>();
-        readText(titleSet, title, columns);
+        List<Integer> countColumns = new LinkedList<>();
+        Map<String, Integer> nameMap = new HashMap<>();
+ 
+        readText(columns, countColumns, nameMap);
 
-        for(int i = 0; i < columns.size(); i++) {
-            for(int j = 0; j < columns.size(); i++) {
-                System.out.print(columns.get(j).get(i));
-            }
-        }
+        System.out.println("columns size: " + columns.size());
+        System.out.println("countColumns: " + countColumns);
 
-        // Scanner scanner = new Scanner(System.in);
-
-        // String inputString = scanner.nextLine();
-        // String[] inputStringList = inputString.split("\\s+");
-
-        // String[] restRows = new String[inputStringList.length - 1];
-
-        // List<List<String>> rows = new LinkedList<>();
-
-        // int rowsNumber = inputStringList.length;
-
-        // // setup first row
-        // List<String> firstRow = new LinkedList<>();
-        // for (int i = 0; i < rowsNumber; i++) {
-        //     firstRow.add(inputStringList[i]);
-        // }
-        // // firstRow = Arrays.asList(inputStringList);
-        // rows.add(firstRow);
-
-        // // setup rest row
-        // for (int i = 0; i < restRows.length; i++) {
-        //     inputString = scanner.nextLine();
-        //     inputStringList = inputString.split("\\s+");
-        //     List<String> row = new LinkedList<>();
-        //     for (int j = 0; j < rowsNumber; j++) {
-        //         row.add(inputStringList[j]);
+        // for(int i = 0; i < columns.size(); i++) {
+        //     for(int j = 0; j < columns.size(); j++) {
+        //         System.out.print(columns.get(j).get(i) + " ");
         //     }
-        //     // row = Arrays.asList(inputStringList);
-        //     rows.add(row);
+        //     System.out.println();
         // }
 
-        // scanner.close();
-
-        // boolean isRational = false;
-        // for(int i = 0; i < rowsNumber; i++) {
-        //     for(int j = 0; j < rowsNumber; j++) {
-        //         if(rows.get(i).get(j).contains("/")) {
-        //             isRational = true;
-        //             break;
-        //         }
-        //     }
-        //     if(isRational) break;
-        // }
-
-        // removeNode(rows, isRational); 
+        removeNode(columns, countColumns); 
 
         // iteration(rows);
     }
 }
-
-// 1 2 3
-/*
- 
-1/3    0   0   0   1/3   0
-0   1   1/2   0   0   0
-0   0   0   0   1/3   0
-0   0   1/2   1   0   0
-1/3   0   0   0   0   1/2
-1/3   0   0   0   1/3   1/2
-
-
-1/3 1/2 0
-1/3 0 1/2 1
-1/3 1/2 x
-
- */
