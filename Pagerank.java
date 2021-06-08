@@ -1,7 +1,8 @@
 import java.io.*;
 import java.util.*;
 import java.math.*;
-import java.security.KeyStore.Entry;
+// import java.security.KeyStore.Entry;
+import java.util.Map.Entry;
 
 // import jdk.javadoc.internal.doclets.formats.html.resources.standard;
 
@@ -9,197 +10,113 @@ class Pagerank {
 
     static final double converge = 0.000000000001;
 
-    public static void showTop3sIncomingAirport(Map<Double, String> treeMap, double[][] matrix, List<String> nameList, Map<String, Integer> nameMap, Map<String, Integer> rankingMap, List<Integer> countColumns) {
-        int count = 0;
+    public static void showTop3sIncomingAirport(List<Entry<String, Double>> list, double[][] matrix, List<String> nameList, Map<String, Integer> nameMap, Map<String, Integer> rankingMap, List<Integer> countColumns) {
+        for(int i = 0; i < list.size(); i++) {
+            if(i < 3 || i >= list.size() - 3) {
+                Entry<String, Double> entry = list.get(i);
+                String key = entry.getKey();
+                double value = entry.getValue();
+    
+                System.out.println((i + 1) + ": " + key + " => " + value);
+    
+                // Map<Integer, String> subTreeMap = new TreeMap<>();
+    
+                int index = nameMap.get(key);
+                // int countIncoming = countColumns.get(index);
+                // System.out.println("Total incoming airports: " + countIncoming);
 
-        for(Map.Entry<Double,String> entry : treeMap.entrySet()) {
-            count++;
-
-            double key = entry.getKey();
-            String value = entry.getValue();
-
-            System.out.println(count + ": " + key + " => " + value);
-
-            Map<Integer, String> subTreeMap = new TreeMap<>();
-
-            int index = nameMap.get(value);
-            int countIncoming = countColumns.get(index);
-            System.out.println("Total incoming airports: " + countIncoming);
-
-            for(int i = 0; i < matrix.length; i++) {
-                if(matrix[index][i] != 0.0) {
-                    String name = nameList.get(i);
-                    int ranking = rankingMap.get(name);
-                    // System.out.println(name + "=>" + ranking);
-                    subTreeMap.put(ranking, name);
+                List<Entry<String, Integer>> subList = new ArrayList<>();
+    
+                for(int j = 0; j < matrix.length; j++) {
+                    if(matrix[index][j] != 0.0) {
+                        String name = nameList.get(j);
+                        int ranking = rankingMap.get(name);
+                        // System.out.println(name + "=>" + ranking);
+                        Entry<String, Integer> subEntry = Map.entry(name, ranking);
+                        subList.add(subEntry);
+                    }
                 }
-            }
 
-            for(Map.Entry<Integer,String> subEntry : subTreeMap.entrySet()) {
-                int ranking = subEntry.getKey();
-                String name = subEntry.getValue();
-                System.out.println(name + "=>" + ranking);
-                
-            }
+                subList.sort(Comparator.comparing(Entry<String, Integer>::getValue));
 
-            System.out.println();
-            
-            if(count >= 3) break;
+                System.out.println("Total incoming airports: " + subList.size());
+    
+                for(int j = 0; j < subList.size(); j++) {
+                    Entry<String, Integer> subEntry = subList.get(j);
+                    System.out.println(subEntry.getKey() + "-" + (subEntry.getValue() + 1));
+                }
+    
+                System.out.println();
+            }
         }
     }
 
-    public static void adjustNameMap(List<String> nameList, Map<String, Integer> nameMap) {
-        nameMap = new HashMap<>();
+    public static Map<String, Integer> adjustNameMap(List<String> nameList) {
+        Map<String, Integer> nameMap = new HashMap<>();
 
         for(int i = 0; i < nameList.size(); i++) {
             nameMap.put(nameList.get(i), i);
         }
+
+        return nameMap;
     }
 
-    public static void show(Map<Double, String> treeMap) {
-        int count = 0;
-
-        for(Map.Entry<Double,String> entry : treeMap.entrySet()) {
-            double key = entry.getKey();
-            String value = entry.getValue();
-          
-            count++;
-
-            System.out.println(count + ": " + key + " => " + value);
-            
-            // if(count >= 10) break;
+    public static void show(List<Entry<String, Double>> list) {
+        for(int i = 0; i < list.size(); i++) {
+            System.out.println((i + 1) + ": " + list.get(i).getKey() + "-" + list.get(i).getValue());
         }
     }
 
-    public static Map<String, Integer> convertTreeMapToRankingMap(Map<Double, String> treeMap) {
-        int count = 0;
+    public static Map<String, Integer> computeRankingMap(List<Entry<String, Double>> list) {
         Map<String, Integer> rankingMap = new HashMap<>();
 
-        for(Map.Entry<Double,String> entry : treeMap.entrySet()) {
-            // double key = entry.getKey();
-            String value = entry.getValue();
-          
-            count++;
-
-            // System.out.println(count + ": " + key + " => " + value);
-            
-            // if(count >= 10) break;
-
-            rankingMap.put(value, count);
+        for(int i = 0; i < list.size(); i++) {
+            rankingMap.put(list.get(i).getKey(), i);
         }
 
         return rankingMap;
     }
 
-    public static Map<Double, String> rank(double[] vector, List<String> nameList) {
-        Map<Double, String> treeMap = new TreeMap<>(Collections.reverseOrder());
+    public static List<Entry<String, Double>> rank(double[] vector, List<String> nameList) {
+        List<Entry<String, Double>> list = new ArrayList<>();
 
         for(int i = 0; i < vector.length; i++) {
-            treeMap.put(vector[i], nameList.get(i));
+            Entry<String, Double> entry = Map.entry(nameList.get(i), vector[i]);
+            list.add(entry);
         }
 
-        return treeMap;
+        list.sort(Comparator.comparing(Entry<String, Double>::getValue).reversed());
+
+        return list;
     }
 
     public static double[] pagerank(double[][] matrix) {
         double[] vector = new double[matrix.length];
         Arrays.fill(vector, 1.0 / matrix.length);
-
-        // System.out.println("vector.length: " + vector.length);
-        // for(int i = 0; i < vector.length; i++) {
-        //     System.out.print(vector[i] + " ");
-        // }
-        // System.out.println();
-
         double[] newVector;
 
         int times = 0;
 
         while(true) {
             times++;
-
-            System.out.println("----------" + times + "-----------");
-
+            
             newVector = new double[matrix.length];
-
-            // for(int i = 0; i < newVector.length; i++) {
-            //     System.out.print(newVector[i] + " ");
-            // }
-            // System.out.println();
-            // System.out.println();
 
             int changeCount = 0;
 
             for(int i = 0; i < matrix.length; i++) {
                 for(int j = 0; j < matrix.length; j++) {
                     newVector[i] += matrix[i][j] * vector[j];
-
-                    // System.out.print(newVector[i] + " ");
                 }
 
                 if(Math.abs(newVector[i] - vector[i]) <= converge) changeCount++;
-
-                // System.out.println();
-                // System.out.println();
             }
 
-            System.out.println(changeCount);
-
-            // for(int i = 0; i < newVector.length; i++) {
-            //     System.out.print(newVector[i] + " ");
-            // }
-            // System.out.println();
+            System.out.println(times + ": converge count: " + changeCount);
 
             if(changeCount >= vector.length) return newVector;
 
-            // vector = newVector.clone();
             System.arraycopy(newVector, 0, vector, 0, newVector.length);
-
-            // System.out.println();
-            // System.out.println();
-
-        }
-
-
-    }
-
-    public static double[] pagerank(List<List<Double>> columns) {
-        double[] vector = new double[columns.size()];
-        Arrays.fill(vector, 1.0 / columns.size());
-
-        System.out.println("vector.length: " + vector.length);
-
-        double[] newVector;
-
-        int times = 0;
-
-        while(true) {
-            times++;
-
-            // System.out.println("---" + times + "---");
-
-            newVector = new double[columns.size()];
-
-            int changeCount = 0;
-
-            for(int j = 0; j < columns.size(); j++) {
-                for(int i = 0; i < columns.size(); i++) {
-                    newVector[j] += columns.get(i).get(j) * vector[i];
-                }
-
-                if(Math.abs(newVector[j] - vector[j]) <= converge) changeCount++;
-
-                // System.out.print(j + " ");
-            }
-            if(changeCount >= vector.length) return newVector;
-
-            // vector = newVector.clone();
-            System.arraycopy(newVector, 0, vector, 0, newVector.length);
-
-            // System.out.println();
-            // System.out.println(changeCount);
-            // System.out.println();
-
         }
 
 
@@ -345,20 +262,24 @@ class Pagerank {
         double[] vector = pagerank(matrix);
 
         System.out.println("start rank");
-        Map<Double, String> treeMap = rank(vector, nameList);
+        List<Entry<String, Double>> list = rank(vector, nameList);
+        
+        //-------------------1.show ranking
+        // show(list);
 
-        System.out.println("start convertTreeMapToRankingMap");
-        Map<String, Integer> rankingMap = convertTreeMapToRankingMap(treeMap);
+        //-------------------2. show top 3
+        /*
 
-        // show(treeMap);
+        System.out.println("start computeRankingMap");
+        Map<String, Integer> rankingMap = computeRankingMap(list);
 
         System.out.println("start adjustNameMap");
-        adjustNameMap(nameList, nameMap);
+        Map<String, Integer> nameMap2 = adjustNameMap(nameList);
 
-        System.out.println("start showTop3sIncomingAirport");
-        showTop3sIncomingAirport(treeMap, matrix, nameList, nameMap, rankingMap, countColumns);
+        // System.out.println("start showTop3sIncomingAirport");
+        showTop3sIncomingAirport(list, matrix, nameList, nameMap2, rankingMap, countColumns);
 
-        // countIncomingOfTop3Airport()
+        */
 
     }
 }
