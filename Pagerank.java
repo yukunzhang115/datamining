@@ -9,6 +9,53 @@ class Pagerank {
 
     static final double converge = 0.000000000001;
 
+    public static void showTop3sIncomingAirport(Map<Double, String> treeMap, double[][] matrix, List<String> nameList, Map<String, Integer> nameMap, Map<String, Integer> rankingMap, List<Integer> countColumns) {
+        int count = 0;
+
+        for(Map.Entry<Double,String> entry : treeMap.entrySet()) {
+            count++;
+
+            double key = entry.getKey();
+            String value = entry.getValue();
+
+            System.out.println(count + ": " + key + " => " + value);
+
+            Map<Integer, String> subTreeMap = new TreeMap<>();
+
+            int index = nameMap.get(value);
+            int countIncoming = countColumns.get(index);
+            System.out.println("Total incoming airports: " + countIncoming);
+
+            for(int i = 0; i < matrix.length; i++) {
+                if(matrix[index][i] != 0.0) {
+                    String name = nameList.get(i);
+                    int ranking = rankingMap.get(name);
+                    // System.out.println(name + "=>" + ranking);
+                    subTreeMap.put(ranking, name);
+                }
+            }
+
+            for(Map.Entry<Integer,String> subEntry : subTreeMap.entrySet()) {
+                int ranking = subEntry.getKey();
+                String name = subEntry.getValue();
+                System.out.println(name + "=>" + ranking);
+                
+            }
+
+            System.out.println();
+            
+            if(count >= 3) break;
+        }
+    }
+
+    public static void adjustNameMap(List<String> nameList, Map<String, Integer> nameMap) {
+        nameMap = new HashMap<>();
+
+        for(int i = 0; i < nameList.size(); i++) {
+            nameMap.put(nameList.get(i), i);
+        }
+    }
+
     public static void show(Map<Double, String> treeMap) {
         int count = 0;
 
@@ -21,14 +68,34 @@ class Pagerank {
             System.out.println(count + ": " + key + " => " + value);
             
             // if(count >= 10) break;
-          }
+        }
+    }
+
+    public static Map<String, Integer> convertTreeMapToRankingMap(Map<Double, String> treeMap) {
+        int count = 0;
+        Map<String, Integer> rankingMap = new HashMap<>();
+
+        for(Map.Entry<Double,String> entry : treeMap.entrySet()) {
+            // double key = entry.getKey();
+            String value = entry.getValue();
+          
+            count++;
+
+            // System.out.println(count + ": " + key + " => " + value);
+            
+            // if(count >= 10) break;
+
+            rankingMap.put(value, count);
+        }
+
+        return rankingMap;
     }
 
     public static Map<Double, String> rank(double[] vector, List<String> nameList) {
         Map<Double, String> treeMap = new TreeMap<>(Collections.reverseOrder());
 
         for(int i = 0; i < vector.length; i++) {
-            treeMap.put(vector[i], nameList.remove(0));
+            treeMap.put(vector[i], nameList.get(i));
         }
 
         return treeMap;
@@ -109,7 +176,7 @@ class Pagerank {
         while(true) {
             times++;
 
-            System.out.println("---" + times + "---");
+            // System.out.println("---" + times + "---");
 
             newVector = new double[columns.size()];
 
@@ -130,7 +197,7 @@ class Pagerank {
             System.arraycopy(newVector, 0, vector, 0, newVector.length);
 
             // System.out.println();
-            System.out.println(changeCount);
+            // System.out.println(changeCount);
             // System.out.println();
 
         }
@@ -145,18 +212,9 @@ class Pagerank {
             
             double num = 1.0 / countColumns.get(i);
 
-            // System.out.println(i);
-            // System.out.println();
-            // System.out.println("-----------num: " + num);
-            // System.out.println();
-
             for(int j = 0; j < columns.size(); j++) {
                 if(columns.get(i).get(j) == 1234567890.0) matrix[j][i] = num;
             }
-
-            // matrix[i] = columns.get(i).stream().mapToDouble(Double::doubleValue).toArray();
-
-            // System.out.println(columns.get(i));
         }
 
         return matrix;
@@ -179,8 +237,6 @@ class Pagerank {
             }
             if(columnNumber == -1) break;
 
-            // System.out.println(count + "-columnNumber: " + columnNumber);
-
             // delete that column
             columns.remove(columnNumber);
             countColumns.remove(columnNumber);
@@ -195,10 +251,10 @@ class Pagerank {
         }
     }
 
-    public static void readText(List<List<Double>> columns, List<Integer> countColumns, List<String> nameList) {
+    public static void readText(List<List<Double>> columns, List<Integer> countColumns, List<String> nameList, Map<String, Integer> nameMap) {
         BufferedReader reader;
 
-        Map<String, Integer> nameMap = new HashMap<>();
+        // Map<String, Integer> nameMap = new HashMap<>();
 
 		try {
 			reader = new BufferedReader(new FileReader("routes.txt"));
@@ -209,14 +265,10 @@ class Pagerank {
 
 			while (line != null) {
                 count++;
-				// System.out.println(count + "-" + line);
-                
 
                 String[] strArray = line.split(",");
                 String departure = strArray[2];
                 String destination = strArray[4];
-
-                // System.out.println(count + "-" + departure + "-" + destination);
 
                 if(!nameMap.containsKey(departure)){
                     List<Double> newColumn = new ArrayList<>();
@@ -264,14 +316,6 @@ class Pagerank {
                     countColumns.set(indexOfDeparture, countColumns.get(indexOfDeparture) + 1);
                 }
 
-                // columns.get(indexOfDeparture).set(indexOfDestination, 1.0);
-                
-
-                // System.out.println("countColumns: " + countColumns);
-                // for(int i = 0; i < columns.size(); i++) {
-                //     System.out.println(columns.get(i));
-                // }
-
 				// read next line
 				line = reader.readLine();
 			}
@@ -280,81 +324,41 @@ class Pagerank {
 			e.printStackTrace();
 		}
 
-        // for(int i = 0; i < columns.size(); i++) {
-        //     System.out.println(i);
-        //     double num = 1.0 / countColumns.get(i);
-        //     for(int j = 0; j < columns.size(); j++) {
-        //         if(columns.get(i).get(j) == 1.0) columns.get(i).set(j, num);
-        //     }
-        // }
-
     }
 
     public static void main(String args[]) {
         List<List<Double>> columns = new ArrayList<>();
         List<Integer> countColumns = new ArrayList<>();
-        List<String> nameList = new LinkedList<>();
+        List<String> nameList = new ArrayList<>();
+        Map<String, Integer> nameMap = new HashMap<>();
  
         System.out.println("start readText");
-
-        readText(columns, countColumns, nameList);
-
-        // System.out.println("columns size: " + columns.size());
-        
-        // System.out.println("countColumns: " + countColumns);
-        
-        // for(int i = 0; i < columns.size(); i++) {
-        //     System.out.println("--------------" + i);
-        //     System.out.println(columns.get(i));
-        //     System.out.println();
-        // }
+        readText(columns, countColumns, nameList, nameMap);
 
         System.out.println("start removeNode");
-
         removeNode(columns, countColumns, nameList); 
 
-        // System.out.println("columns size: " + columns.size());
-        // System.out.println("countColumns: " + countColumns);
-
-        // for(int i = 0; i < columns.size(); i++) {
-        //     System.out.println("--------------" + i);
-        //     System.out.println("--------------" + countColumns.get(i));
-        //     System.out.println(columns.get(i));
-        //     System.out.println();
-        // }
-
         System.out.println("start convertMatrix");
-
         double[][] matrix = convertMatrix(columns, countColumns);
 
-        // for(int i = 0; i < matrix.length; i++) {
-        //     System.out.println("--------------" + i);
-        //     System.out.println("--------------" + countColumns.get(i));
-        //     for(int j = 0; j < matrix.length; j++) {
-        //         System.out.print(matrix[i][j] + " ");
-        //     }
-        //     System.out.println();
-        // }
-
-        // System.out.println("columns size: " + columns.size());
-        // System.out.println("nameList size: " + nameList.size());
-
         System.out.println("start pagerank");
-
         double[] vector = pagerank(matrix);
 
-        // System.out.println("start rank");
-
+        System.out.println("start rank");
         Map<Double, String> treeMap = rank(vector, nameList);
 
-        show(treeMap);
+        System.out.println("start convertTreeMapToRankingMap");
+        Map<String, Integer> rankingMap = convertTreeMapToRankingMap(treeMap);
 
-        // for(int i = 0; i < columns.size(); i++) {
-        //     for(int j = 0; j < columns.size(); j++) {
-        //         System.out.print(columns.get(j).get(i) + " ");
-        //     }
-        //     System.out.println();
-        // }
+        // show(treeMap);
+
+        System.out.println("start adjustNameMap");
+        adjustNameMap(nameList, nameMap);
+
+        System.out.println("start showTop3sIncomingAirport");
+        showTop3sIncomingAirport(treeMap, matrix, nameList, nameMap, rankingMap, countColumns);
+
+        // countIncomingOfTop3Airport()
 
     }
 }
